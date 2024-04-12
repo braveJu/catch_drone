@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+    integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+    crossorigin="anonymous"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Audio Streaming</title>
+</head>
+
+<body>
+    <h1>Real-time Audio Streaming</h1>
+    <h2 >Sensor Number : <span id="sen_num" style="color: red;">{{ sensor_number }}</span></h2>
+    <button id="startButton">Start Recording</button>
+    <button id="stopButton" disabled>Stop Recording</button>
+    <div id="space"></div>
+
+    <script>
+        let number = document.getElementById("sen_num");
+        let s_number = sen_num.textContent;
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        let start_time = 0;
+        let end_time = 0;
+        let audioChunks = [];
+        let mediaRecorder;
+        let space = document.getElementById('space');
+        let socket = io();
+        
+        startButton.onclick = () => {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                        socket.emit('audio', {
+                            data: new Blob([event.data], {type:'audio/wav'}),
+                            sensor_number: s_number,
+                            is_connected:true,
+                        });
+
+                        <!-- 데이터가 가는지 확인하기 위한 코드 -->
+                        // space.innerHTML += '<br>' + event.data;
+                    };
+                    mediaRecorder.start(100);
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        formData.append('audio_file', audioBlob);
+
+                        fetch('/upload/audio', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.text())
+                            .then(data => console.log(data))
+                            .catch(error => console.error('Error:', error));
+
+                        // audioChunks = [];
+                    };
+                    
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
+        };
+
+        stopButton.onclick = () => {
+            mediaRecorder.stop();
+            // 스탑 버튼을 누르면 소켓 통신 종료, 그리고 서버에게도 알려줌으로써 리스튼에서 제거
+            socket.emit('audio', {
+                            data: null,
+                            sensor_number: s_number,
+                            is_connected:false,
+                        });
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        };
+    </script>
+</body>
+
+</html>
