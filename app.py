@@ -23,10 +23,6 @@ sensor_data = defaultdict(deque)
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-# context = SSL.Context(SSL.TLSv1_2_METHOD)
-# context.use_privatekey_file('./key.pem')
-# context.use_certificate_file('./cert.pem')
-
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
