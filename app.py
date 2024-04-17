@@ -9,7 +9,7 @@ import uuid
 from collections import defaultdict, deque
 
 from utils import save_file
-
+from OpenSSL import SSL
 # from audio import blobs_to_feature_map
 
 
@@ -23,8 +23,11 @@ sensor_data = defaultdict(deque)
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+context = SSL.Context(SSL.TLSv1_2_METHOD)
+context.use_privatekey_file('./key.pem')
+context.use_certificate_file('./cert.pem')
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -140,6 +143,10 @@ def client():
 
 # 메인 함수
 if __name__ == "__main__":
-    socketio.run(app, port=5555)
+    # from waitress import serve
+    # serve(app, host='0.0.0.0', port=80)
+    socketio.run(app,host='0.0.0.0', port = 80)
+    # app.run(host='0.0.0.0', port = 80, ssl_context = context)
 
 
+#waitress-serve --key=./catch_drone/key.pem --cert=./catch_drone/cert.pem app:app
