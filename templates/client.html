@@ -76,6 +76,7 @@
 
         stopButton.onclick = () => {
             mediaRecorder.stop();
+            navigator.mediaDevices.getUserMedia({ audio: false})
             // 스탑 버튼을 누르면 소켓 통신 종료, 그리고 서버에게도 알려줌으로써 리스튼에서 제거
             socket.emit('audio', {
                             data: null,

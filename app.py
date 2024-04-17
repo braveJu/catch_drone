@@ -23,7 +23,8 @@ sensor_data = defaultdict(deque)
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
+# 가져가면 여기 mysql 비밀번호 바꿔야한다.
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -62,7 +63,6 @@ def handle_audio(data):
     if len(sensor_data[sensor_num]) < 1000:
         sensor_data[sensor_num].append(recieved_data)
     else:
-        # save_file(f"{sensor_num}",sensor_data[sensor_num])
         sensor_data[sensor_num].popleft()
         sensor_data[sensor_num].append(recieved_data)
         
@@ -86,7 +86,7 @@ def monitor():
     return render_template('monitor.html')
 
 
-# 오디오 업로드 라우트, 저장하는 부분
+# 오디오 업로드 라우트, 저장하는 부분, for dataset
 @app.route("/upload/audio", methods=["POST"])
 def upload_audio():
     file_name = str(int(time()))

@@ -1,35 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Audio Waveform Monitor</title>
-    <style>
-        canvas {
-            border: 1px solid black;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Real-time Audio Waveform Monitor</h1>
-    <div id="audioContainer">
-        <audio id="audioPlayer" controls></audio>
-        <canvas id="waveformCanvas" width="800" height="200"></canvas>
-    </div>
+{% extends base.html %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+{% block content %}
     <script>
-        const socket = io();
 
-        socket.on('get_sensor_data', function(data) {
-            const sensorId = data.sensor_id;
-            const sensorValue = data.sensor_value;
-            const feature_map = data.feature_map;
-
-            console.log(sensorId, feature_map);
-
-        });
     </script>
-</body>
-</html>
+    <h1>
+        
+    </h1>
+{% endblock %}
