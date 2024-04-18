@@ -1,10 +1,33 @@
-{% extends base.html %}
+{% extends 'base.html' %}
+
+{% block title %}
+    Monitor
+{% endblock %}
+
+{% block main_title %}
+Monitoring
+{% endblock %}
 
 {% block content %}
-    <script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
 
+<h3>Activated Sensor</h3>
+<ul id="sensor-list"></ul>
+    <script>
+        // Socket.IO 서버에 연결
+        const socket = io();
+
+        // 서버로부터 데이터를 받으면 처리
+        socket.on('activated_sensors', function(data) {
+            const sensorList = document.getElementById('sensor-list');
+            // 기존 목록 삭제
+            sensorList.innerHTML = '';
+            // 받은 데이터를 목록으로 표시
+            data.forEach(sensor => {
+                const li = document.createElement('li');
+                li.textContent = `Sensor ${sensor}`;
+                sensorList.appendChild(li);
+            });
+        });
     </script>
-    <h1>
-        
-    </h1>
 {% endblock %}

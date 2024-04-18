@@ -19,9 +19,10 @@ class DataCollector:
         self.activated_sensor = set()
         self.max_blob = max_blob
         self.sensor_data_dict = defaultdict(deque)
+        self.is_stoped = set()
     
     def put_sersor_data(self, sensor_num, recieved_data, is_connected:bool):
-        if is_connected:
+        if is_connected and not sensor_num in self.is_stoped:
             self.activated_sensor.add(sensor_num)
             
             # max_blob을 넘어가지 않게 1000 되면 1000개로 유지
@@ -31,6 +32,10 @@ class DataCollector:
 
         else:
             #센서가 종료되면 activated_sensor에서 없애고, 사전도 없앤다.
+            if sensor_num in self.is_stoped:
+                self.is_stoped.discard(sensor_num)
+                
+            self.is_stoped.add(sensor_num)
             self.activated_sensor.discard(sensor_num)
             del self.sensor_data_dict[sensor_num]
     
@@ -54,4 +59,5 @@ class DataCollector:
         return True
     
     
-    
+    def status(self):
+        print(f"Activated : {self.get_activated_sensor_list()}")

@@ -8,17 +8,15 @@ from time import time
 import uuid
 from collections import defaultdict, deque
 
-from utils import save_file
+from utils import save_file, DataCollector
 # from OpenSSL import SSL
 # from audio import blobs_to_feature_map
 
 
 BASE_DIR = "./audio"
-sensor_set = set()
 
-#센서들의 현재까지 받아온 데이터를 저장하는 딕셔너리, dafaultdict를 사용하여 기본적으로 리스트 생성
-sensor_data = defaultdict(deque)
-
+# 데이터를 저장해주는 클래스, in utils
+collector = DataCollector()
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -47,32 +45,26 @@ class Sensor(db.Model):
 with app.app_context():
     db.create_all()
 
+
+def send_activated_sensors():
+    emit('activated_sensors', collector.get_activated_sensor_list(), broadcast=True)
+
 @socketio.on('audio')
-def handle_audio(data): 
+def handle_audio(data):
     # 변수에 데이터 저장
     recieved_data = data['data'] # Blob
     sensor_num = data['sensor_number']
     is_connected = data['is_connected']
     
-    sensor_set.add(sensor_num)
-     
-    if is_connected == False:
-        sensor_set.discard(sensor_num)
-        sensor_data[sensor_num] = deque()
+    collector.put_sersor_data(sensor_num, recieved_data, is_connected)
     
-    if len(sensor_data[sensor_num]) < 1000:
-        sensor_data[sensor_num].append(recieved_data)
-    else:
-        sensor_data[sensor_num].popleft()
-        sensor_data[sensor_num].append(recieved_data)
-        
-    feature_map = None
+    # feature_map = None
     # feature_map = blobs_to_feature_map(sensor_data[sensor_num])
     
-    print(f'Received data from sensor {sensor_num}: {sensor_set}, {is_connected}')
-    
+    collector.status()
+    send_activated_sensors()
     # 클라이언트로부터 받아오 데이터를 monitor로 전송하기 위한 코드
-    emit('get_sensor_data', {'sensor_id': sensor_num, 'sensor_value': recieved_data, 'feature_map':feature_map}, broadcast=True)
+    # emit('get_sensor_data', {'sensor_id': sensor_num, 'sensor_value': recieved_data}, broadcast=True)
     
     
 
@@ -136,6 +128,8 @@ def login():
 def client():
     sensor_number = session["sensor_number"]
     return render_template("client.html", sensor_number=sensor_number)
+
+
 
 # 메인 함수
 if __name__ == "__main__":
