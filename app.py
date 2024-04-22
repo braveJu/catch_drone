@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, redirect, url_for
+from flask import Flask, request, render_template, session, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
 
@@ -7,15 +7,14 @@ from datetime import datetime
 from time import time
 import uuid
 from collections import defaultdict, deque
+import json
 
 from utils import save_file, DataCollector
-# from OpenSSL import SSL
-# from audio import blobs_to_feature_map
 
-
+#오디오 파일이 저장되는 디렉터리
 BASE_DIR = "./audio"
 
-# 데이터를 저장해주는 클래스, in utils
+# 데이터를 저장해주는 클래스, in utils, 들어오는 데이터를 관리해준다.
 collector = DataCollector()
 
 app = Flask(__name__)
@@ -55,19 +54,20 @@ def handle_audio(data):
     recieved_data = data['data'] # Blob
     sensor_num = data['sensor_number']
     is_connected = data['is_connected']
-    
     collector.put_sersor_data(sensor_num, recieved_data, is_connected)
     
-    # feature_map = None
-    # feature_map = blobs_to_feature_map(sensor_data[sensor_num])
-    
-    collector.status()
+    # collector.status()
+    if collector.is_full():
+        print("블롭 가득창!")
+        
     send_activated_sensors()
     # 클라이언트로부터 받아오 데이터를 monitor로 전송하기 위한 코드
     # emit('get_sensor_data', {'sensor_id': sensor_num, 'sensor_value': recieved_data}, broadcast=True)
-    
-    
 
+
+@socketio.on('mfcc')
+
+    
 # 홈페이지 라우트
 @app.route("/")
 def index():
@@ -81,6 +81,7 @@ def monitor():
 # 오디오 업로드 라우트, 저장하는 부분, for dataset
 @app.route("/upload/audio", methods=["POST"])
 def upload_audio():
+    # 현재 시간대로 파일 이름 설정
     file_name = str(int(time()))
     file_dir = os.path.join(BASE_DIR, str(session["sensor_number"]))
 
@@ -130,13 +131,14 @@ def client():
     return render_template("client.html", sensor_number=sensor_number)
 
 
-
+@app.route('/mfcc', methods = ['GET'])
+def mfcc():
+    mfcc_result = collector.get_all_mfcc()
+    if mfcc_result:
+        return jsonify(mfcc_result)
+        
+    
 # 메인 함수
 if __name__ == "__main__":
-    # from waitress import serve
-    # serve(app, host='0.0.0.0', port=80)
-    socketio.run(app,host='0.0.0.0', port = 80)
-    # app.run(host='0.0.0.0', port = 80, ssl_context = context)
-
-
-#waitress-serve --key=./catch_drone/key.pem --cert=./catch_drone/cert.pem app:app
+    #socketio.run(app,host='0.0.0.0', port = 80)
+    socketio.run(app, port=5000)

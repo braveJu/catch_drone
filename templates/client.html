@@ -15,7 +15,7 @@
 <body>
 
     <h1>Real-time Audio Streaming</h1>
-    <h2 >Sensor Number : <span id="sen_num" style="color: red;">{{ sensor_number }}</span></h2>
+    <h2 >Sensor Number : <span id="sen_num" style="color: blueviolet;">{{ sensor_number }}</span></h2>
     <button id="startButton">Start Recording</button>
     <button id="stopButton" disabled>Stop Recording</button>
     <div id="space"></div>
@@ -38,7 +38,7 @@
                 .then(stream => {
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
+                        // audioChunks.push(event.data);
                         socket.emit('audio', {
                             data: new Blob([event.data], {type:'audio/wav'}),
                             sensor_number: s_number,
@@ -54,6 +54,12 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                         const formData = new FormData();
                         formData.append('audio_file', audioBlob);
+                        
+                        socket.emit('audio', {
+                            data: null,
+                            sensor_number: s_number,
+                            is_connected:false,
+                        });
 
                         fetch('/upload/audio', {
                             method: 'POST',
