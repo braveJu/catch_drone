@@ -11,7 +11,7 @@ import json
 
 from utils import save_file, DataCollector
 
-#오디오 파일이 저장되는 디렉터리
+# 오디오 파일이 저장되는 디렉터리
 BASE_DIR = "./audio"
 
 # 데이터를 저장해주는 클래스, in utils, 들어오는 데이터를 관리해준다.
@@ -24,6 +24,7 @@ socketio = SocketIO(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
+
 
 # Sensor 모델 정의
 class Sensor(db.Model):
@@ -40,42 +41,42 @@ class Sensor(db.Model):
     def check_password(self, password):
         return self.password_hash == password
 
+
 # 데이터베이스 초기화
 with app.app_context():
     db.create_all()
 
 
 def send_activated_sensors():
-    emit('activated_sensors', collector.get_activated_sensor_list(), broadcast=True)
+    emit("activated_sensors", collector.get_activated_sensor_list(), broadcast=True)
 
-@socketio.on('audio')
+
+@socketio.on("audio")
 def handle_audio(data):
     # 변수에 데이터 저장
-    recieved_data = data['data'] # Blob
-    sensor_num = data['sensor_number']
-    is_connected = data['is_connected']
+    recieved_data = data["data"]  # Blob
+    sensor_num = data["sensor_number"]
+    is_connected = data["is_connected"]
     collector.put_sersor_data(sensor_num, recieved_data, is_connected)
-    
+
     # collector.status()
     if collector.is_full():
         print("블롭 가득창!")
-        
+
     send_activated_sensors()
     # 클라이언트로부터 받아오 데이터를 monitor로 전송하기 위한 코드
     # emit('get_sensor_data', {'sensor_id': sensor_num, 'sensor_value': recieved_data}, broadcast=True)
 
 
-@socketio.on('mfcc')
-
-    
 # 홈페이지 라우트
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
 @app.route("/monitor")
 def monitor():
-    return render_template('monitor.html')
+    return render_template("monitor.html")
 
 
 # 오디오 업로드 라우트, 저장하는 부분, for dataset
@@ -97,6 +98,7 @@ def upload_audio():
     audio.save(file_dir + f"/{file_name}_audio.wav")
 
     return "Audio uploaded successfully"
+
 
 # 로그인 라우트
 @app.route("/login", methods=["GET", "POST"])
@@ -124,6 +126,7 @@ def login():
     elif request.method == "GET":
         return render_template("login.html")
 
+
 # 클라이언트 라우트
 @app.route("/client")
 def client():
@@ -131,14 +134,15 @@ def client():
     return render_template("client.html", sensor_number=sensor_number)
 
 
-@app.route('/mfcc', methods = ['GET'])
+@app.route("/mfcc", methods=["GET"])
 def mfcc():
-    mfcc_result = collector.get_all_mfcc()
-    if mfcc_result:
-        return jsonify(mfcc_result)
-        
-    
+    if collector.is_full():
+        return jsonify(collector.get_all_mfcc())
+    else:
+        return "no"
+
+
 # 메인 함수
 if __name__ == "__main__":
-    #socketio.run(app,host='0.0.0.0', port = 80)
+    # socketio.run(app,host='0.0.0.0', port = 80)
     socketio.run(app, port=5000)

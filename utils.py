@@ -1,4 +1,4 @@
-from audio import blob_list2mfcc, blobs_to_mfcc
+from audio import blobs_to_mfcc
 import pickle
 from collections import defaultdict, deque
 import numpy as np
@@ -7,7 +7,7 @@ import numpy as np
 
 # 센서 데이터를 관리해주는 클래스
 class DataCollector:
-    def __init__(self, max_sensor_num=1, max_blob=30) -> None:
+    def __init__(self, max_sensor_num=1, max_blob=20) -> None:
         self.max_sensor_num = max_sensor_num
         self.activated_sensor = set()
         self.max_blob = max_blob
@@ -44,19 +44,13 @@ class DataCollector:
     # 센서들의 데이터용량이 다 차면 데이터를 mfcc로 변환해주는 함수
     def get_all_mfcc(self):
         # 모든 센서들의 블록 리스트
-        if not self.is_full:
-            return None
-
         mfcc_result = dict()
         for key in self.sensor_data_dict.keys():
             #deque -> list
             list_val = list(self.sensor_data_dict[key])
-            mfcc = blobs_to_mfcc(list_val)
+            mfcc = blobs_to_mfcc(key, list_val)
             mfcc_result[key] = mfcc.tolist()
-
-            # mfcc 연산후에 flush
-            self.sensor_data_dict[key] = deque()
-
+        self.flush()
         return mfcc_result
 
     # 모든 센서에 데이터가 다 차면?
@@ -73,7 +67,10 @@ class DataCollector:
         if len(self.activated_sensor)> 0:
             print(f"Activated : {self.get_activated_sensor_list()}")
 
-
+    def flush(self):
+        for key in self.sensor_data_dict.keys():
+            self.sensor_data_dict[key] = deque()
+        
 # 데이터 저장하고, 불러오는 함수들
 
 def save_file(file_name: str, data):
