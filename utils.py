@@ -2,12 +2,12 @@ from audio import blobs_to_mfcc
 import pickle
 from collections import defaultdict, deque
 import numpy as np
-
+import asyncio
 
 
 # 센서 데이터를 관리해주는 클래스
 class DataCollector:
-    def __init__(self, max_sensor_num=1, max_blob=20) -> None:
+    def __init__(self, max_sensor_num=1, max_blob=100) -> None:
         self.max_sensor_num = max_sensor_num
         self.activated_sensor = set()
         self.max_blob = max_blob
@@ -39,17 +39,17 @@ class DataCollector:
     def get_activated_sensor_list(self):
         return sorted(list(self.activated_sensor))
 
-    # librosa에 데이터가 들어가야하는데, 어떻게 들어가야하지?
-
     # 센서들의 데이터용량이 다 차면 데이터를 mfcc로 변환해주는 함수
     def get_all_mfcc(self):
-        # 모든 센서들의 블록 리스트
         mfcc_result = dict()
+        tasks = []
         for key in self.sensor_data_dict.keys():
-            #deque -> list
+            # deque -> list
             list_val = list(self.sensor_data_dict[key])
-            mfcc = blobs_to_mfcc(key, list_val)
-            mfcc_result[key] = mfcc.tolist()
+            tasks.append(blobs_to_mfcc(key, list_val))
+
+        for key, result in zip(self.sensor_data_dict.keys(), tasks):
+            mfcc_result[key] = result.tolist()
         self.flush()
         return mfcc_result
 

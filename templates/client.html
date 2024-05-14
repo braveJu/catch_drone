@@ -1,9 +1,6 @@
-
-
-<!DOCTYPE html>
 <html lang="en">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
-    integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+    integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
     crossorigin="anonymous"></script>
 
 <head>
@@ -13,52 +10,86 @@
 </head>
 
 <body>
-
     <h1>Real-time Audio Streaming</h1>
-    <h2 >Sensor Number : <span id="sen_num" style="color: blueviolet;">{{ sensor_number }}</span></h2>
+    <h2>Sensor Number : <span id="sen_num" style="color: rgb(192, 70, 206);">{{ sensor_number }}</span></h2>
     <button id="startButton">Start Recording</button>
     <button id="stopButton" disabled>Stop Recording</button>
-    <div id="space"></div>
 
+    <div id="space"></div>
+    <script src="{{ url_for('static', filename='recoder.js')}}"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/regenerator-runtime/0.13.7/runtime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/encoderWorker.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/OpusMediaRecorder.umd.js"></script>
+    <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
 
     <script>
+        let audio_context;
+        let recorder;
         let number = document.getElementById("sen_num");
         let s_number = sen_num.textContent;
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
-        let start_time = 0;
-        let end_time = 0;
         let audioChunks = [];
+        let temp_chunk = [];
         let mediaRecorder;
-        let space = document.getElementById('space');
+        let temp_formdata = new FormData();
+        let temp_blob;
         let socket = io();
-        
+        let cnt = 0;
+        let header = null;
+        let new_flag = true;
+
+        const options = { mimeType: 'audio/wav' }
+        // 1초동안 하고 stop 누르고, 이것을 계속 반복하게 만드는거지
         startButton.onclick = () => {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => {
-                        // audioChunks.push(event.data);
-                        socket.emit('audio', {
-                            data: new Blob([event.data], {type:'audio/wav'}),
-                            sensor_number: s_number,
-                            is_connected:true,
-                        });
+                        audioChunks.push(event.data);
+                        if(audioChunks.length == 2){
+                            header = audioChunks.slice(0);
+                        }
+                        // console.log(audioChunks);
+                        if(header != null){
+                            temp_chunk.push(event.data);
+                        }
+                        
 
-                        <!-- 데이터가 가는지 확인하기 위한 코드 -->
-                        // space.innerHTML += '<br>' + event.data;
+                        if (temp_chunk.length == 21) {
+                            console.log(cnt);
+                            
+                            console.log(temp_chunk);
+                            temp_chunk = header.concat(temp_chunk);
+                            let temp_formdata = new FormData();
+                            let temp_blob = new Blob(temp_chunk);
+                            temp_formdata.append('audio_file', temp_blob);
+                            fetch('/upload/audio', {
+                                method: 'POST',
+                                body: temp_formdata
+                            })
+                                .then(response => response.text())
+                                .then(data => console.log(data))
+                                .catch(error => console.error('Error:', error));
+                            temp_chunk = [];
+                            cnt += 1;
+
+                        }
+
+
                     };
-                    mediaRecorder.start(100);
+                    mediaRecorder.start(10);
 
                     mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioBlob = new Blob(audioChunks);
                         const formData = new FormData();
                         formData.append('audio_file', audioBlob);
-                        
+
                         socket.emit('audio', {
                             data: null,
                             sensor_number: s_number,
-                            is_connected:false,
+                            is_connected: false,
                         });
 
                         fetch('/upload/audio', {
@@ -69,9 +100,9 @@
                             .then(data => console.log(data))
                             .catch(error => console.error('Error:', error));
 
-                        // audioChunks = [];
+                        audioChunks = [];
                     };
-                    
+
                     startButton.disabled = true;
                     stopButton.disabled = false;
                 })
@@ -80,15 +111,14 @@
                 });
         };
 
+
         stopButton.onclick = () => {
             mediaRecorder.stop();
-            navigator.mediaDevices.getUserMedia({ audio: false})
-            // 스탑 버튼을 누르면 소켓 통신 종료, 그리고 서버에게도 알려줌으로써 리스튼에서 제거
             socket.emit('audio', {
-                            data: null,
-                            sensor_number: s_number,
-                            is_connected:false,
-                        });
+                data: null,
+                sensor_number: s_number,
+                is_connected: false,
+            });
             startButton.disabled = false;
             stopButton.disabled = true;
         };

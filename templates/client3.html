@@ -1,0 +1,104 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Audio Streaming</title>
+</head>
+
+<body>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+        integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
+        crossorigin="anonymous"></script>
+    
+
+    <h1>Real-time Audio Streaming</h1>
+    <h2>Sensor Number : <span id="sen_num" style="color: rgb(74, 234, 0);">{{ sensor_number }}</span></h2>
+    <button id="startButton">Start Recording</button>
+    <button id="stopButton" disabled>Stop Recording</button>
+    <div id="space"></div>
+    <!-- <script src="{{ url_for('static', filename='audio.js')}}"></script> -->
+    <script type="text/javascript" src="{{ url_for('static', filename='node_modules/extendable-media-recorder') }}"></script>
+
+    <script>
+        import { MediaRecorder } from 'extendable-media-recorder';
+        
+        let number = document.getElementById("sen_num");
+        let s_number = sen_num.textContent;
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        let max_blob = 20;
+        let start_time = 0;
+        let end_time = 0;
+        let audioChunks = [];
+        let totalChunks = [];
+        let mediaRecorder;
+        let socket = io();
+
+        startButton.onclick = () => {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start(10);
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                        totalChunks.push(event.data);
+                        console.log(event.data)
+
+                        if (audioChunks.length == max_blob) {
+                            console.log("create wav file.")
+                            const formData = new FormData();
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            audioChunks = [];
+                            let wavBlob = convertWebMToWAV(audioBlob)
+                                .then(wavBlob => {
+                                    console.log("created wav blob", wavBlob);
+                                    formData.append('audio_file', wavBlob);
+                                    fetch('/upload/audio', {
+                                        method: 'POST',
+                                        body: formData,
+                                    })
+                                        .then(response => response.text())
+                                        .then(data => console.log(data))
+                                        .catch(error => console.error('Error:', error));
+                                })
+                                .catch(error => {
+                                    console.error(error); // 변환 중 오류가 발생한 경우 에러를 처리할 수 있습니다.
+                                });
+                        }
+
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const total_audioBlob = new Blob(totalChunks, { type: 'audio/webm' });
+                        const formData = new FormData();
+                        formData.append('audio_file', total_audioBlob);
+
+                        fetch('/upload/audio', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.text())
+                            .then(data => console.log(data))
+                            .catch(error => console.error('Error:', error));
+
+                        totalChunks = []
+                    };
+
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
+        };
+        stopButton.onclick = () => {
+            mediaRecorder.stop();
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        };
+    </script>
+</body>
+
+</html>

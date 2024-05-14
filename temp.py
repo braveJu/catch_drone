@@ -1,7 +1,15 @@
-import requests
-import time
+import subprocess
+import os
+import sys
 
-while True:
-    data = requests.get('https://dronecatcher.info/mfcc')
-    print(data.content)
-    time.sleep(1)
+def convert_video_to_audio_ffmpeg(video_file, output_ext="wav"):
+    """Converts video to audio directly using `ffmpeg` command
+    with the help of subprocess module"""
+    filename, ext = os.path.splitext(video_file)
+    subprocess.call(["ffmpeg", "-y", "-i", video_file, f"{filename}.{output_ext}"], 
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT)
+
+if __name__ == "__main__":
+    vf = sys.argv[1]
+    convert_video_to_audio_ffmpeg(vf)
