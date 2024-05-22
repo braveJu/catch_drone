@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleStartRecording() {
-        socket.emit('temp', { 'sensor_num': sensorNumber });
+
 
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 mediaRecorder.ondataavailable = event => handleDataAvailable(event);
                 mediaRecorder.onstop = handleStopRecording;
-
+                socket.emit('temp', { 'sensor_num': sensorNumber });
                 startButton.disabled = true;
                 stopButton.disabled = false;
             })
