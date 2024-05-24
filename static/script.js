@@ -1,25 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // HTML 요소와 변수 초기화
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
     const sensorNumberElement = document.getElementById("sen_num");
     const sensorNumber = sensorNumberElement.textContent;
-    const maxCNT = 2;
-    const MAX_SEN = 2;
-    const STARTVAL = 10;
-    const number_x = 25;
-    const socket = io();
-    let mediaRecorder;
-    let audioChunks = [];
-    let tempChunk = [];
-    let isReady = false;
-    let flag = true;
-    let header_list = [];
-    let header = null;
-    let cnt = 0;
-    let current_date = null;
+    const maxCNT = 2; 
+    const MAX_SEN = 2; 
+    const STARTVAL = 5; 
+    const number_x = 20; 
+    const socket = io(); 
+    let mediaRecorder; 
+    let audioChunks = []; 
+    let tempChunk = []; 
+    let isReady = false; 
+    let header_list = []; 
+    let header = null; 
+    let cnt = 0; 
 
-    const options = { mimeType: 'audio/webm' };
+    const options = { mimeType: 'audio/webm' }; 
 
+    // 현재 시간을 포맷팅하여 반환하는 함수
     function getCurrentFormattedTime() {
         const now = new Date();
         const year = String(now.getFullYear());
@@ -28,19 +28,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-
-        return `${year}:${month}:${day}_${hours}:${minutes}:${seconds}`;
+        return `${year}-${month}-${day}!${hours}-${minutes}-${seconds}`;
     }
 
+    // 녹음을 시작하는 함수
     function handleStartRecording() {
-
-
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
                 mediaRecorder = new MediaRecorder(stream, options);
                 mediaRecorder.start(STARTVAL);
 
-                mediaRecorder.ondataavailable = event => handleDataAvailable(event);
+                mediaRecorder.ondataavailable = handleDataAvailable;
                 mediaRecorder.onstop = handleStopRecording;
                 socket.emit('temp', { 'sensor_num': sensorNumber });
                 startButton.disabled = true;
@@ -49,66 +47,44 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch(error => console.error('Error accessing microphone:', error));
     }
 
+    // 녹음을 중지하는 함수
     function handleStopRecording() {
         mediaRecorder.stop();
         sendAudioDataToServer(new Blob(audioChunks), sensorNumber, getCurrentFormattedTime());
         resetRecordingState();
     }
 
+    // 오디오 데이터가 준비되었을 때 호출되는 함수
     function handleDataAvailable(event) {
-
         if (cnt < maxCNT) {
             header_list.push(event.data);
         }
-        if (cnt == maxCNT) {
+        if (cnt === maxCNT) {
             header = header_list;
         }
 
         socket.emit('audio', { sensor_number: sensorNumber, is_connected: true });
-        socket.on('ready', data => { isReady = data == MAX_SEN; });
-        if (isReady && header != null) {
+        socket.on('ready', data => { isReady = data === MAX_SEN; });
+
+        if (isReady && header !== null) {
             audioChunks.push(event.data);
             tempChunk.push(event.data);
 
             if (tempChunk.length >= number_x) {
                 sendChunkToServer();
                 tempChunk = [];
-                setTimeout(100);
             }
         }
         cnt += 1;
     }
 
-    function extractWebMHeader(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = function () {
-                const buffer = reader.result;
-                const dataView = new DataView(buffer);
-
-                // Extract WebM header info
-                const headerInfo = new Uint8Array(buffer); // Adjust the slice to read more if needed
-                console.log(headerInfo);
-                // Resolve the promise with the header info
-                resolve(headerInfo);
-            };
-
-            reader.onerror = function () {
-                // Reject the promise if there is an error reading the blob
-                reject(new Error("Failed to read blob"));
-            };
-
-            reader.readAsArrayBuffer(blob);
-        });
-    }
-
+    // 오디오 청크를 서버로 전송하는 함수
     function sendChunkToServer() {
         tempChunk = tempChunk.slice(-number_x);
         const combinedChunks = header.concat(tempChunk);
         const blob = new Blob(combinedChunks, { type: 'audio/webm' });
-        
-        const formData = new FormData();
 
+        const formData = new FormData();
         formData.append('audio_file', blob);
         formData.append('sensor_number', sensorNumber);
         formData.append('file_name', getCurrentFormattedTime());
@@ -117,11 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
             method: 'POST',
             body: formData
         })
-            .then(response => console.log(response.text))
+            .then(response => response.text())
             .then(data => console.log(data))
             .catch(error => console.error('Error:', error));
     }
 
+    // 전체 오디오 데이터를 서버로 전송하는 함수
     function sendAudioDataToServer(blob, sensorNumber, fileName) {
         const formData = new FormData();
         formData.append('audio_file', blob);
@@ -137,6 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch(error => console.error('Error:', error));
     }
 
+    // 녹음 상태를 초기화하는 함수
     function resetRecordingState() {
         socket.emit('audio', { sensor_number: sensorNumber, is_connected: false });
         audioChunks = [];
@@ -144,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stopButton.disabled = true;
     }
 
+    // 이벤트 리스너 설정
     startButton.addEventListener('click', handleStartRecording);
     stopButton.addEventListener('click', handleStopRecording);
 });

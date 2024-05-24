@@ -83,13 +83,13 @@ def wav_to_mel_spectogram(wav_file, file_name,sample_rate=22050):
         y=signal_normalized, sr=sr, n_fft=1024, hop_length=len(signal) // 128 + 1
     )
     
-    S_dB = librosa.power_to_db(mel, ref=np.max)
+    # S_dB = librosa.power_to_db(mel, ref=np.max)
 
-    # dB 범위를 [0, 255]로 스케일링
-    S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
-    S_dB_normalized = S_dB_normalized.astype(np.uint8)
+    # # dB 범위를 [0, 255]로 스케일링
+    # S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
+    # S_dB_normalized = S_dB_normalized.astype(np.uint8)
 
     # 이미지 저장
     # img = Image.fromarray(S_dB_normalized)
     # img.save(f"{file_name}.png", format='PNG')
-    return S_dB_normalized
+    return mel
