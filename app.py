@@ -135,10 +135,10 @@ def upload_audio():
         collector.spectrogram_buffer = [[sensor_number, spectrogram]]
         collector.filename_buffer = [[sensor_number, file_name]]
     else:
+        print(collector.filename_buffer)
         collector.spectrogram_buffer.append([sensor_number, spectrogram])
         collector.filename_buffer.append([sensor_number, file_name])
     
-    print(collector.filename_buffer)
     
     return "Audio uploaded successfully"
 
@@ -198,11 +198,11 @@ def mel_spectrogram():
         len(spectrogram2[1][0]) == 129,
     )
 
-    if not (a and b and c and d):
-        return (
-            f"Shape Error ({len(spectrogram1)},{len(spectrogram1[0])}) \n ({len(spectrogram2)},{len(spectrogram2[0])})",
-            400,
-        )
+    # if not (a and b and c and d):
+    #     return (
+    #         f"Shape Error ({len(spectrogram1[1])},{len(spectrogram1[1][0])}) \n ({len(spectrogram2[1])},{len(spectrogram2[1][0])})",
+    #         400,
+    #     )
 
     response = {
         "spectrograms": [
