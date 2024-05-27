@@ -7,7 +7,7 @@ import os
 from pydub import AudioSegment
 import numpy as np
 from audio import wav_to_mel_spectogram, wav_to_mfcc
-from utils import save_file, DataCollector, blob_save_with_wav
+from utils import DataCollector
 
 # 오디오 파일이 저장되는 디렉터리 설정
 AUDIO_BASE_DIR = os.path.join(os.getcwd(), "audio")
@@ -100,6 +100,9 @@ def upload_audio():
     os.makedirs(webm_dir, exist_ok=True)
 
     webm_file = os.path.join(webm_dir, f"{file_name}.webm")
+    if len(collector.filename_buffer) == 1:
+        file_name = collector.filename_buffer[0][1]
+        
     audio_file = os.path.join(file_dir, f"{file_name}.wav")
     audio = request.files["audio_file"]
     audio.save(webm_file)
@@ -113,8 +116,9 @@ def upload_audio():
     spectrogram = wav_to_mel_spectogram(
         wav_file=audio_file, file_name=audio_file
     ).tolist()
-    
-    # spectrogram = wav_to_mfcc(
+
+    # MFCC 생성
+    # mfcc = wav_to_mfcc(
     #     file_name=audio_file
     # ).tolist()
 
@@ -133,7 +137,9 @@ def upload_audio():
     else:
         collector.spectrogram_buffer.append([sensor_number, spectrogram])
         collector.filename_buffer.append([sensor_number, file_name])
-
+    
+    print(collector.filename_buffer)
+    
     return "Audio uploaded successfully"
 
 
@@ -177,16 +183,27 @@ def mel_spectrogram():
 
     spectrogram1, spectrogram2 = collector.spectrogram_buffer
     file_name1, file_name2 = collector.filename_buffer
-    
+
     # 두 스펙토그램의 입력 센서가 같으면 오류발생!
     if spectrogram1[0] == spectrogram2[0] == 0:
         return "Sync Error", 400
-    
+
     # Mel-spectrogram의 shape가 다르면 error 발생시키기
     # 항상 128, 129가 나오게 만들어라!
-    if np.array(spectrogram1) != (128, 129) or np.array(spectrogram2) != (128, 129):
-        return "Shape Error", 400
-    
+    # a,b,c,d 모두 조건을 만족시켜야함
+    a, b, c, d = (
+        len(spectrogram1[1]) == 128,
+        len(spectrogram1[1][0]) == 129,
+        len(spectrogram2[1]) == 128,
+        len(spectrogram2[1][0]) == 129,
+    )
+
+    if not (a and b and c and d):
+        return (
+            f"Shape Error ({len(spectrogram1)},{len(spectrogram1[0])}) \n ({len(spectrogram2)},{len(spectrogram2[0])})",
+            400,
+        )
+
     response = {
         "spectrograms": [
             {
@@ -205,4 +222,4 @@ def mel_spectrogram():
 
 
 if __name__ == "__main__":
-    socketio.run(app, port=80, host='0.0.0.0')
+    socketio.run(app, port=80, host="0.0.0.0")

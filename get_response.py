@@ -32,6 +32,6 @@ def get_mel_spectrogram(url:str):
     
 
 
-# url = "https://dronecatcher.info/mel-spectrogram"
+# url = "https://dronecatcher.info/mel-spectrog\ram"
 url = 'http://127.0.0.1:5000/mel-spectrogram'
 get_mel_spectrogram(url)
