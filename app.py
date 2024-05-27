@@ -110,13 +110,13 @@ def upload_audio():
     os.remove(webm_file)
 
     # mel-spectrogram 생성
-    # spectrogram = wav_to_mel_spectogram(
-    #     wav_file=audio_file, file_name=audio_file
-    # ).tolist()
-    
-    spectrogram = wav_to_mfcc(
-        file_name=audio_file
+    spectrogram = wav_to_mel_spectogram(
+        wav_file=audio_file, file_name=audio_file
     ).tolist()
+    
+    # spectrogram = wav_to_mfcc(
+    #     file_name=audio_file
+    # ).tolist()
 
     if len(collector.spectrogram_buffer) == collector.max_sensor_num:
         collector.pair_list.append(
