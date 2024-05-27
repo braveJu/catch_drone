@@ -4,9 +4,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const stopButton = document.getElementById('stopButton');
     const sensorNumberElement = document.getElementById("sen_num");
     const sensorNumber = sensorNumberElement.textContent;
+
+    //처음 두개의 블롭을 헤더로 정함
     const maxCNT = 2; 
     const MAX_SEN = 2; 
-    const STARTVAL = 5; 
+    const STARTVAL = 1; 
     const number_x = 20; 
     const socket = io(); 
     let mediaRecorder; 

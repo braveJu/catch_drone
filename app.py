@@ -5,8 +5,8 @@ from datetime import datetime
 import uuid
 import os
 from pydub import AudioSegment
-
-from audio import wav_to_mel_spectogram
+import numpy as np
+from audio import wav_to_mel_spectogram, wav_to_mfcc
 from utils import save_file, DataCollector, blob_save_with_wav
 
 # 오디오 파일이 저장되는 디렉터리 설정
@@ -21,6 +21,7 @@ socketio = SocketIO(app)
 
 # SQLAlchemy 설정 - MySQL 데이터베이스 연결
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -90,8 +91,8 @@ def upload_audio():
     sensor_number = request.form.get("sensor_number")
     file_name = request.form.get("file_name")
 
-    webm_dir = os.path.join(TEMP_DIR, sensor_number)
-    file_dir = os.path.join(BASE_DIR, sensor_number)
+    webm_dir = os.path.join(TEMP_BASE_DIR, sensor_number)
+    file_dir = os.path.join(AUDIO_BASE_DIR, sensor_number)
 
     collector.sensor_buffer.append(sensor_number)
 
@@ -109,7 +110,13 @@ def upload_audio():
     os.remove(webm_file)
 
     # mel-spectrogram 생성
-    spectrogram = wav_to_mel_spectogram(wav_file=audio_file, file_name=audio_file).tolist()
+    # spectrogram = wav_to_mel_spectogram(
+    #     wav_file=audio_file, file_name=audio_file
+    # ).tolist()
+    
+    spectrogram = wav_to_mfcc(
+        file_name=audio_file
+    ).tolist()
 
     if len(collector.spectrogram_buffer) == collector.max_sensor_num:
         collector.pair_list.append(
@@ -146,7 +153,9 @@ def login():
             session["sensor_number"] = sensor.sensor_number
             return redirect(url_for("client"))
         else:
-            return render_template("login.html", message="Invalid username or password. Please try again.")
+            return render_template(
+                "login.html", message="Invalid username or password. Please try again."
+            )
 
     return render_template("login.html")
 
@@ -166,9 +175,18 @@ def mel_spectrogram():
     if len(collector.spectrogram_buffer) < 2:
         return "Not enough data", 400
 
-    spectrogram1, spectrogram2 = collector.spectrogram_buffer[:2]
-    file_name1, file_name2 = collector.filename_buffer[:2]
-
+    spectrogram1, spectrogram2 = collector.spectrogram_buffer
+    file_name1, file_name2 = collector.filename_buffer
+    
+    # 두 스펙토그램의 입력 센서가 같으면 오류발생!
+    if spectrogram1[0] == spectrogram2[0] == 0:
+        return "Sync Error", 400
+    
+    # Mel-spectrogram의 shape가 다르면 error 발생시키기
+    # 항상 128, 129가 나오게 만들어라!
+    if np.array(spectrogram1) != (128, 129) or np.array(spectrogram2) != (128, 129):
+        return "Shape Error", 400
+    
     response = {
         "spectrograms": [
             {
@@ -183,9 +201,8 @@ def mel_spectrogram():
             },
         ]
     }
-
     return jsonify(response)
 
 
 if __name__ == "__main__":
-    socketio.run(app, port=5000)
+    socketio.run(app, port=80, host='0.0.0.0')

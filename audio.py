@@ -10,7 +10,6 @@ import moviepy.editor as moviepy
 import os
 import subprocess
 from PIL import Image
-
 import io
 
 def combine_blobs(blobs):
@@ -50,7 +49,6 @@ def blobs_to_mel_spectrogram(sensor_num, blob_list, sample_rate=44100, n_mfcc=40
     # MFCC 계산 or Melspectrogram 계산
 
     mel_spectogram = librosa.feature.melspectrogram(audio_data)
-    # mfcc = librosa.feature.mfcc(y=audio_data, sr=sample_rate, n_mfcc=n_mfcc)
     return mel_spectogram
 
 
@@ -83,13 +81,14 @@ def wav_to_mel_spectogram(wav_file, file_name,sample_rate=22050):
         y=signal_normalized, sr=sr, n_fft=1024, hop_length=len(signal) // 128 + 1
     )
     
-    # S_dB = librosa.power_to_db(mel, ref=np.max)
+    S_dB = librosa.power_to_db(mel, ref=np.max)
 
     # # dB 범위를 [0, 255]로 스케일링
-    # S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
-    # S_dB_normalized = S_dB_normalized.astype(np.uint8)
+    S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
+    S_dB_normalized = S_dB_normalized.astype(np.uint8)
 
     # 이미지 저장
     # img = Image.fromarray(S_dB_normalized)
     # img.save(f"{file_name}.png", format='PNG')
-    return mel
+    return S_dB_normalized
+
