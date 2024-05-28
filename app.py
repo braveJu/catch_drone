@@ -6,12 +6,14 @@ import uuid
 import os
 from pydub import AudioSegment
 import numpy as np
-from audio import wav_to_mel_spectogram, wav_to_mfcc
+from audio import wav_to_mel_spectogram, wav_to_mfcc, color_mel_spectrogram
 from utils import DataCollector
+from PIL import Image
 
 # 오디오 파일이 저장되는 디렉터리 설정
 AUDIO_BASE_DIR = os.path.join(os.getcwd(), "audio")
 TEMP_BASE_DIR = os.path.join(os.getcwd(), "temp")
+IMAGE_BASE_DIR = os.path.join(os.getcwd(), "images")
 
 # 데이터 수집을 위한 객체 초기화
 collector = DataCollector()
@@ -93,17 +95,21 @@ def upload_audio():
 
     webm_dir = os.path.join(TEMP_BASE_DIR, sensor_number)
     file_dir = os.path.join(AUDIO_BASE_DIR, sensor_number)
-
+    image_dir = os.path.join(IMAGE_BASE_DIR, sensor_number)
+    
     collector.sensor_buffer.append(sensor_number)
 
     os.makedirs(file_dir, exist_ok=True)
     os.makedirs(webm_dir, exist_ok=True)
+    os.makedirs(image_dir, exist_ok=True)
 
     webm_file = os.path.join(webm_dir, f"{file_name}.webm")
     if len(collector.filename_buffer) == 1:
         file_name = collector.filename_buffer[0][1]
         
     audio_file = os.path.join(file_dir, f"{file_name}.wav")
+    image_file = os.path.join(image_dir, f"{file_name}.png")
+    
     audio = request.files["audio_file"]
     audio.save(webm_file)
 
@@ -114,8 +120,13 @@ def upload_audio():
 
     # mel-spectrogram 생성
     spectrogram = wav_to_mel_spectogram(
-        wav_file=audio_file, file_name=audio_file
-    ).tolist()
+        wav_file=audio_file
+    )
+    
+    # color mel_spectrogram 얻기
+    color_mel_spectrogram(mel_spectrogram, image_file)
+    
+    spectrogram = spectrogram.tolist()
 
     # MFCC 생성
     # mfcc = wav_to_mfcc(
@@ -134,9 +145,12 @@ def upload_audio():
 
         collector.spectrogram_buffer = [[sensor_number, spectrogram]]
         collector.filename_buffer = [[sensor_number, file_name]]
+        collector.image_path_buffer = [[sensor_number, image_file]]
     else:
+        print(collector.filename_buffer)
         collector.spectrogram_buffer.append([sensor_number, spectrogram])
         collector.filename_buffer.append([sensor_number, file_name])
+        collector.image_path_buffer.append([sensor_number, image_file])
     
     
     return "Audio uploaded successfully"
@@ -182,6 +196,10 @@ def mel_spectrogram():
 
     spectrogram1, spectrogram2 = collector.spectrogram_buffer
     file_name1, file_name2 = collector.filename_buffer
+    image_path1, image_path2 = collector.image_path_buffer
+    
+    image1 = np.array(Image.open(image_path1))
+    image2 = np.array(Image.open(image_path2))
 
     # 두 스펙토그램의 입력 센서가 같으면 오류발생!
     if spectrogram1[0] == spectrogram2[0] == 0:
@@ -190,12 +208,12 @@ def mel_spectrogram():
     # Mel-spectrogram의 shape가 다르면 error 발생시키기
     # 항상 128, 129가 나오게 만들어라!
     # a,b,c,d 모두 조건을 만족시켜야함
-    a, b, c, d = (
-        len(spectrogram1[1]) == 128,
-        len(spectrogram1[1][0]) == 129,
-        len(spectrogram2[1]) == 128,
-        len(spectrogram2[1][0]) == 129,
-    )
+    # a, b, c, d = (
+    #     len(spectrogram1[1]) == 128,
+    #     len(spectrogram1[1][0]) == 129,
+    #     len(spectrogram2[1]) == 128,
+    #     len(spectrogram2[1][0]) == 129,
+    # )
 
     # if not (a and b and c and d):
     #     return (
@@ -208,17 +226,16 @@ def mel_spectrogram():
             {
                 "sensor_number": spectrogram1[0],
                 "file_name": file_name1,
-                "image": spectrogram1[1],
+                "image": image1,
             },
             {
                 "sensor_number": spectrogram2[0],
                 "file_name": file_name2,
-                "image": spectrogram2[1],
+                "image": image2,
             },
         ]
     }
     return jsonify(response)
-
 
 if __name__ == "__main__":
     socketio.run(app, port=80, host="0.0.0.0")

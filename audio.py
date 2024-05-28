@@ -28,7 +28,7 @@ def convert_webm_to_wav(input_filename, output_filename):
     subprocess.run(["ffmpeg", "-i", input_filename, output_filename])
 
 
-def blobs_to_mel_spectrogram(sensor_num, blob_list, sample_rate=44100, n_mfcc=40):
+def blobs_to_mel_spectrogram(sensor_num, blob_list, sample_rate=22050, n_mfcc=40):
     # 모든 blob 데이터를 합치기 위한 빈 바이너리 데이터 생성
     combined_blob = combine_blobs(blob_list)
     file_name = str(int(time.time()))
@@ -73,7 +73,7 @@ def wav_to_mfcc(file_name, sample_rate=44100, n_mfcc=40):
     return mfcc
 
 
-def wav_to_mel_spectogram(wav_file, file_name,sample_rate=22050):
+def wav_to_mel_spectogram(wav_file,sample_rate=22050):
     signal, sr = librosa.load(wav_file, sr=sample_rate, mono=True)
     signal_normalized = librosa.util.normalize(signal)
 
@@ -91,4 +91,13 @@ def wav_to_mel_spectogram(wav_file, file_name,sample_rate=22050):
     # img = Image.fromarray(S_dB_normalized)
     # img.save(f"{file_name}.png", format='PNG')
     return S_dB_normalized
+
+
+def color_mel_spectrogram(mel_spectrogram, file_path):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    librosa.display.specshow(mel_spectrogram)
+    fig.savefig(file_path)
+    plt.close(fig)
 

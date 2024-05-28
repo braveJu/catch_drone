@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxCNT = 3; 
     const MAX_SEN = 2; 
     const STARTVAL = 10; 
-    const number_x = 20; 
+    const number_x = 40; 
     const socket = io(); 
     let mediaRecorder; 
     let audioChunks = []; 
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 녹음을 중지하는 함수
     function handleStopRecording() {
         mediaRecorder.stop();
-        sendAudioDataToServer(new Blob(audioChunks), sensorNumber, getCurrentFormattedTime());
+        sendAudioDataToServer(new Blob(audioChunks), sensorNumber, 'final_'+getCurrentFormattedTime());
         resetRecordingState();
     }
 
