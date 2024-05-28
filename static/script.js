@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     //처음 두개의 블롭을 헤더로 정함
     const maxCNT = 3; 
     const MAX_SEN = 2; 
-    const STARTVAL = 1; 
-    const number_x = 25; 
+    const STARTVAL = 10; 
+    const number_x = 20; 
     const socket = io(); 
     let mediaRecorder; 
     let audioChunks = []; 

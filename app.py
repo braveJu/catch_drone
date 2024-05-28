@@ -20,8 +20,8 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 # SQLAlchemy 설정 - MySQL 데이터베이스 연결
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
-# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -135,7 +135,6 @@ def upload_audio():
         collector.spectrogram_buffer = [[sensor_number, spectrogram]]
         collector.filename_buffer = [[sensor_number, file_name]]
     else:
-        print(collector.filename_buffer)
         collector.spectrogram_buffer.append([sensor_number, spectrogram])
         collector.filename_buffer.append([sensor_number, file_name])
     
