@@ -2,6 +2,8 @@ import librosa
 import numpy as np
 import librosa.display
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 from scipy.io import wavfile
 import time
 import wave
@@ -94,10 +96,9 @@ def wav_to_mel_spectogram(wav_file,sample_rate=22050):
 
 
 def color_mel_spectrogram(mel_spectrogram, file_path):
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
+    fig, ax = plt.subplots()
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    librosa.display.specshow(mel_spectrogram)
-    fig.savefig(file_path)
+    ax.axis('off')
+    librosa.display.specshow(mel_spectrogram, cmap='viridis', ax=ax)
+    fig.savefig(file_path, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
-

@@ -34,6 +34,7 @@ class DataCollector:
         self.sensor_buffer = []
         self.spectrogram_buffer = []
         self.filename_buffer = []
+        self.image_path_buffer = []
         self.pair_list = []
         self.pair_cnt = 0
 

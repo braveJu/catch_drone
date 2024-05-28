@@ -22,8 +22,8 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 # SQLAlchemy 설정 - MySQL 데이터베이스 연결
-# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -124,7 +124,7 @@ def upload_audio():
     )
     
     # color mel_spectrogram 얻기
-    color_mel_spectrogram(mel_spectrogram, image_file)
+    color_mel_spectrogram(spectrogram, image_file)
     
     spectrogram = spectrogram.tolist()
 
@@ -238,4 +238,5 @@ def mel_spectrogram():
     return jsonify(response)
 
 if __name__ == "__main__":
-    socketio.run(app, port=80, host="0.0.0.0")
+    # socketio.run(app, port=80, host="0.0.0.0")
+    socketio.run(app)
