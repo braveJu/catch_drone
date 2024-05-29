@@ -14,6 +14,8 @@ import os
 import subprocess
 from PIL import Image
 import io
+import torch
+import torchaudio
 
 def combine_blobs(blobs):
     combined_blob = b"".join(blobs)
@@ -99,3 +101,29 @@ def color_mel_spectrogram(mel_spectrogram, file_path):
     librosa.display.specshow(mel_spectrogram, ax=ax)
     fig.savefig(file_path, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
+
+def wav_to_mel_spectrogram2(audio_path):
+    waveform, sample_rate = torchaudio.load(audio_path, normalize=True)
+    
+    if waveform.size(0) == 2:
+        waveform = torch.mean(waveform, dim=0).unsqueeze(0)
+    
+    resampling_transform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=44100)
+    waveform = resampling_transform(waveform)
+    waveform = pad_or_trim_waveform(waveform, 22050 * 2)
+    
+    mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=22050, hop_length=len(waveform[0])//224 - 2, n_mels=128, n_fft=1024)
+    mel_spectrogram = mel_transform(waveform)
+    
+    return mel_spectrogram
+
+def pad_or_trim_waveform(waveform, target_length):
+    current_length = waveform.shape[1]
+    if current_length < target_length:
+        # Pad with zeros
+        padding = target_length - current_length
+        waveform = torch.nn.functional.pad(waveform, (0, padding))
+    elif current_length > target_length:
+        # Trim to the target length
+        waveform = waveform[:, :target_length]
+    return waveform

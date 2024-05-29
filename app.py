@@ -6,7 +6,7 @@ import uuid
 import os
 from pydub import AudioSegment
 import numpy as np
-from audio import wav_to_mel_spectogram, wav_to_mfcc, color_mel_spectrogram
+from audio import wav_to_mel_spectrogram2, wav_to_mfcc, color_mel_spectrogram
 from utils import DataCollector
 from PIL import Image
 
@@ -119,17 +119,12 @@ def upload_audio():
     os.remove(webm_file)
 
     # mel-spectrogram 생성
-    spectrogram = wav_to_mel_spectogram(wav_file=audio_file)
+    spectrogram = wav_to_mel_spectrogram2(audio_file)
 
     # color mel_spectrogram 얻기
-    color_mel_spectrogram(spectrogram, image_file)
+    # color_mel_spectrogram(spectrogram, image_file)
 
     spectrogram = spectrogram.tolist()
-
-    # MFCC 생성
-    # mfcc = wav_to_mfcc(
-    #     file_name=audio_file
-    # ).tolist()
 
     if len(collector.spectrogram_buffer) == collector.max_sensor_num:
         collector.pair_list.append(
@@ -193,42 +188,26 @@ def mel_spectrogram():
 
     spectrogram1, spectrogram2 = collector.spectrogram_buffer
     file_name1, file_name2 = collector.filename_buffer
-    image_path1, image_path2 = collector.image_path_buffer
+    # image_path1, image_path2 = collector.image_path_buffer
 
-    image1 = np.array(Image.open(image_path1))
-    image2 = np.array(Image.open(image_path2))
+    # image1 = np.array(Image.open(image_path1))
+    # image2 = np.array(Image.open(image_path2))
 
     # 두 스펙토그램의 입력 센서가 같으면 오류발생!
     if spectrogram1[0] == spectrogram2[0] == 0:
         return "Sync Error", 400
-
-    # Mel-spectrogram의 shape가 다르면 error 발생시키기
-    # 항상 128, 129가 나오게 만들어라!
-    # a,b,c,d 모두 조건을 만족시켜야함
-    # a, b, c, d = (
-    #     len(spectrogram1[1]) == 128,
-    #     len(spectrogram1[1][0]) == 129,
-    #     len(spectrogram2[1]) == 128,
-    #     len(spectrogram2[1][0]) == 129,
-    # )
-
-    # if not (a and b and c and d):
-    #     return (
-    #         f"Shape Error ({len(spectrogram1[1])},{len(spectrogram1[1][0])}) \n ({len(spectrogram2[1])},{len(spectrogram2[1][0])})",
-    #         400,
-    #     )
 
     response = {
         "spectrograms": [
             {
                 "sensor_number": spectrogram1[0],
                 "file_name": file_name1,
-                "image": image1,
+                "image": spectrogram1,
             },
             {
                 "sensor_number": spectrogram2[0],
                 "file_name": file_name2,
-                "image": image2,
+                "image": spectrogram2,
             },
         ]
     }
@@ -237,7 +216,7 @@ def mel_spectrogram():
 
 # 현재 처리하고있는 파일의 이름을 알려주기 위해서
 @app.route("/current_filename", methods=["GET"])
-def mel_spectrogram():
+def current_filename():
     file_name1, file_name2 = collector.filename_buffer
 
     response = {
