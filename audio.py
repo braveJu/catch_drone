@@ -4,6 +4,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
+
 from scipy.io import wavfile
 import time
 import wave
@@ -30,7 +31,7 @@ def convert_webm_to_wav(input_filename, output_filename):
     subprocess.run(["ffmpeg", "-i", input_filename, output_filename])
 
 
-def blobs_to_mel_spectrogram(sensor_num, blob_list, sample_rate=22050, n_mfcc=40):
+def blobs_to_mel_spectrogram(sensor_num, blob_list, sample_rate=22050):
     # 모든 blob 데이터를 합치기 위한 빈 바이너리 데이터 생성
     combined_blob = combine_blobs(blob_list)
     file_name = str(int(time.time()))
@@ -77,28 +78,24 @@ def wav_to_mfcc(file_name, sample_rate=44100, n_mfcc=40):
 
 def wav_to_mel_spectogram(wav_file,sample_rate=22050):
     signal, sr = librosa.load(wav_file, sr=sample_rate, mono=True)
+
     signal_normalized = librosa.util.normalize(signal)
 
     mel = librosa.feature.melspectrogram(
-        y=signal_normalized, sr=sr, n_fft=1024, hop_length=len(signal) // 128 + 1
+        y=signal_normalized ,sr=sr, n_fft=1024, hop_length=len(signal) // 224 + 1,n_mels=224
     )
-    
     S_dB = librosa.power_to_db(mel, ref=np.max)
-
+    print(mel.shape)
     # # dB 범위를 [0, 255]로 스케일링
-    S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
-    S_dB_normalized = S_dB_normalized.astype(np.uint8)
-
-    # 이미지 저장
-    # img = Image.fromarray(S_dB_normalized)
-    # img.save(f"{file_name}.png", format='PNG')
-    return S_dB_normalized
+    # S_dB_normalized = (S_dB - S_dB.min()) / (S_dB.max() - S_dB.min()) * 255
+    # S_dB_normalized = S_dB_normalized.astype(np.uint8)
+    return S_dB
 
 
 def color_mel_spectrogram(mel_spectrogram, file_path):
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     ax.axis('off')
-    librosa.display.specshow(mel_spectrogram, cmap='viridis', ax=ax)
+    librosa.display.specshow(mel_spectrogram, ax=ax)
     fig.savefig(file_path, bbox_inches='tight', pad_inches=0)
     plt.close(fig)

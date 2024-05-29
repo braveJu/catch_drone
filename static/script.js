@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxCNT = 3; 
     const MAX_SEN = 2; 
     const STARTVAL = 10; 
-    const number_x = 40; 
+    const number_x = 55; 
     const socket = io(); 
     let mediaRecorder; 
     let audioChunks = []; 

@@ -96,7 +96,7 @@ def upload_audio():
     webm_dir = os.path.join(TEMP_BASE_DIR, sensor_number)
     file_dir = os.path.join(AUDIO_BASE_DIR, sensor_number)
     image_dir = os.path.join(IMAGE_BASE_DIR, sensor_number)
-    
+
     collector.sensor_buffer.append(sensor_number)
 
     os.makedirs(file_dir, exist_ok=True)
@@ -106,10 +106,10 @@ def upload_audio():
     webm_file = os.path.join(webm_dir, f"{file_name}.webm")
     if len(collector.filename_buffer) == 1:
         file_name = collector.filename_buffer[0][1]
-        
+
     audio_file = os.path.join(file_dir, f"{file_name}.wav")
     image_file = os.path.join(image_dir, f"{file_name}.png")
-    
+
     audio = request.files["audio_file"]
     audio.save(webm_file)
 
@@ -119,13 +119,11 @@ def upload_audio():
     os.remove(webm_file)
 
     # mel-spectrogram 생성
-    spectrogram = wav_to_mel_spectogram(
-        wav_file=audio_file
-    )
-    
+    spectrogram = wav_to_mel_spectogram(wav_file=audio_file)
+
     # color mel_spectrogram 얻기
     color_mel_spectrogram(spectrogram, image_file)
-    
+
     spectrogram = spectrogram.tolist()
 
     # MFCC 생성
@@ -151,8 +149,7 @@ def upload_audio():
         collector.spectrogram_buffer.append([sensor_number, spectrogram])
         collector.filename_buffer.append([sensor_number, file_name])
         collector.image_path_buffer.append([sensor_number, image_file])
-    
-    
+
     return "Audio uploaded successfully"
 
 
@@ -197,7 +194,7 @@ def mel_spectrogram():
     spectrogram1, spectrogram2 = collector.spectrogram_buffer
     file_name1, file_name2 = collector.filename_buffer
     image_path1, image_path2 = collector.image_path_buffer
-    
+
     image1 = np.array(Image.open(image_path1))
     image2 = np.array(Image.open(image_path2))
 
@@ -236,6 +233,19 @@ def mel_spectrogram():
         ]
     }
     return jsonify(response)
+
+
+# 현재 처리하고있는 파일의 이름을 알려주기 위해서
+@app.route("/current_filename", methods=["GET"])
+def mel_spectrogram():
+    file_name1, file_name2 = collector.filename_buffer
+
+    response = {
+        "filename1": file_name1,
+        "filename2": file_name2,
+    }
+    return jsonify(response)
+
 
 if __name__ == "__main__":
     # socketio.run(app, port=80, host="0.0.0.0")
