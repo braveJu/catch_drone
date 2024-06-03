@@ -8,8 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
     //처음 두개의 블롭을 헤더로 정함
     const maxCNT = 3; 
     const MAX_SEN = 2; 
-    const STARTVAL = 10; 
-    const number_x = 55; 
+    const STARTVAL = 5;
+    //blob의 개수 파일로 저장할ß
+    const number_x = 35;
     const socket = io(); 
     let mediaRecorder; 
     let audioChunks = []; 
@@ -19,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let header = null; 
     let cnt = 0; 
 
-    const options = { mimeType: 'audio/webm' }; 
+    const options = { mimeType: 'audio/webm'}; 
 
     // 현재 시간을 포맷팅하여 반환하는 함수
     function getCurrentFormattedTime() {
@@ -35,7 +36,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 녹음을 시작하는 함수
     function handleStartRecording() {
-        navigator.mediaDevices.getUserMedia({ audio: true })
+        navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              sampleRate: 44100,
+              channelCount: 1,
+              volume: 1.0,
+              echoCancellation: false, // 에코 제거 비활성화
+              noiseSuppression: false, // 잡음 제거 비활성화
+              autoGainControl: false // 자동 이득 제어 비활성화
+            }
+          })
             .then(stream => {
                 mediaRecorder = new MediaRecorder(stream, options);
                 mediaRecorder.start(STARTVAL);

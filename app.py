@@ -9,6 +9,8 @@ import numpy as np
 from audio import wav_to_mel_spectrogram2, wav_to_mfcc, color_mel_spectrogram
 from utils import DataCollector
 from PIL import Image
+import time
+import random
 
 # 오디오 파일이 저장되는 디렉터리 설정
 AUDIO_BASE_DIR = os.path.join(os.getcwd(), "audio")
@@ -22,8 +24,8 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 # SQLAlchemy 설정 - MySQL 데이터베이스 연결
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
-# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -89,9 +91,14 @@ def monitor():
 @app.route("/upload/audio", methods=["POST"])
 def upload_audio():
     """오디오 업로드를 처리하는 라우트"""
+    # time.sleep(random.random())
     current_time = datetime.now()
     sensor_number = request.form.get("sensor_number")
     file_name = request.form.get("file_name")
+
+    if sensor_number == '2':
+        time.sleep(0.5)
+        
 
     webm_dir = os.path.join(TEMP_BASE_DIR, sensor_number)
     file_dir = os.path.join(AUDIO_BASE_DIR, sensor_number)
@@ -104,8 +111,8 @@ def upload_audio():
     os.makedirs(image_dir, exist_ok=True)
 
     webm_file = os.path.join(webm_dir, f"{file_name}.webm")
-    if len(collector.filename_buffer) == 1:
-        file_name = collector.filename_buffer[0][1]
+    # if len(collector.filename_buffer) == 1:
+    #     file_name = collector.filename_buffer[0][1]
 
     audio_file = os.path.join(file_dir, f"{file_name}.wav")
     image_file = os.path.join(image_dir, f"{file_name}.png")
@@ -202,15 +209,17 @@ def mel_spectrogram():
             {
                 "sensor_number": spectrogram1[0],
                 "file_name": file_name1,
-                "image": spectrogram1,
+                "image": spectrogram1[1],
             },
             {
                 "sensor_number": spectrogram2[0],
                 "file_name": file_name2,
-                "image": spectrogram2,
+                "image": spectrogram2[1],
             },
         ]
     }
+    collector.spectrogram_buffer = []
+    collector.filename_buffer = []
     return jsonify(response)
 
 
@@ -227,5 +236,5 @@ def current_filename():
 
 
 if __name__ == "__main__":
-    # socketio.run(app, port=80, host="0.0.0.0")
-    socketio.run(app)
+    socketio.run(app, port=80, host="0.0.0.0")
+    # socketio.run(app)
