@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const sensorNumber = sensorNumberElement.textContent;
 
     //처음 두개의 블롭을 헤더로 정함
-    const maxCNT = 3; 
+    const maxCNT = 4; 
     const MAX_SEN = 2; 
     const STARTVAL = 5;
     //blob의 개수 파일로 저장할ß
-    const number_x = 35;
+    const number_x = 36;
     const socket = io(); 
     let mediaRecorder; 
     let audioChunks = []; 

@@ -70,12 +70,21 @@ def save_audio_from_bytes(
         wf.writeframes(byte_data)
 
 
-def wav_to_mfcc(file_name, sample_rate=44100, n_mfcc=40):
+def wav_to_mfcc(file_name, sample_rate=44100, n_mfcc=40, desired_num_frames = 170):
     # 임시 파일을 librosa로 읽기
     audio_data, _ = librosa.load(file_name, sr=sample_rate, mono=True)
-    # MFCC 계산
-    mfcc = librosa.feature.mfcc(y=audio_data, sr=sample_rate, n_mfcc=n_mfcc)
-    return mfcc
+    # # MFCC 계산
+    # mfcc = librosa.feature.mfcc(y=audio_data, sr=sample_rate, n_mfcc=n_mfcc)
+    
+    mfccs = librosa.feature.mfcc(y=audio_data, sr=sample_rate, n_mfcc=40)
+    # MFCC 배열 자르기 또는 패딩하기
+    if mfccs.shape[1] > desired_num_frames:
+        mfccs = mfccs[:, :desired_num_frames]  # 지정된 프레임 개수만큼 자르기
+    else:
+        padding = desired_num_frames - mfccs.shape[1]
+        mfccs = np.pad(mfccs, ((0, 0), (0, padding)), mode='constant')  # 패딩 추가
+    return mfccs
+
 
 
 def wav_to_mel_spectogram(wav_file,sample_rate=22050):

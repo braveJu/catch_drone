@@ -24,8 +24,8 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 # SQLAlchemy 설정 - MySQL 데이터베이스 연결
-# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:rootpass@localhost:3306/uav"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:1234@localhost:3306/uav"
 app.config["SECRET_KEY"] = str(uuid.uuid4())
 db = SQLAlchemy(app)
 
@@ -95,7 +95,7 @@ def upload_audio():
     current_time = datetime.now()
     sensor_number = request.form.get("sensor_number")
     file_name = request.form.get("file_name")
-
+    # 한번에 두개 들어오는것보다 천천히 하는게 나을것같아서 ?
     if sensor_number == '2':
         time.sleep(0.5)
         
@@ -126,12 +126,16 @@ def upload_audio():
     os.remove(webm_file)
 
     # mel-spectrogram 생성
-    spectrogram = wav_to_mel_spectrogram2(audio_file)
+    # spectrogram = wav_to_mel_spectrogram2(audio_file)
 
+
+    #mfcc 생성
+    mfcc = wav_to_mfcc(audio_file)
     # color mel_spectrogram 얻기
     # color_mel_spectrogram(spectrogram, image_file)
 
-    spectrogram = spectrogram.tolist()
+    # spectrogram = spectrogram.tolist()
+    mfcc = mfcc.tolist()
 
     if len(collector.spectrogram_buffer) == collector.max_sensor_num:
         collector.pair_list.append(
@@ -143,12 +147,12 @@ def upload_audio():
             collector.write_pair_info()
             collector.pair_list = []
 
-        collector.spectrogram_buffer = [[sensor_number, spectrogram]]
+        collector.spectrogram_buffer = [[sensor_number, mfcc]]
         collector.filename_buffer = [[sensor_number, file_name]]
         collector.image_path_buffer = [[sensor_number, image_file]]
     else:
         print(collector.filename_buffer)
-        collector.spectrogram_buffer.append([sensor_number, spectrogram])
+        collector.spectrogram_buffer.append([sensor_number, mfcc])
         collector.filename_buffer.append([sensor_number, file_name])
         collector.image_path_buffer.append([sensor_number, image_file])
 
@@ -221,6 +225,7 @@ def mel_spectrogram():
     collector.spectrogram_buffer = []
     collector.filename_buffer = []
     return jsonify(response)
+
 
 
 # 현재 처리하고있는 파일의 이름을 알려주기 위해서
